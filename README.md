@@ -1,11 +1,146 @@
-# quip-react-menu
+# quip-react-toolbar
+
+`quip-react-toolbar` is a rendereless React component for quickly and easily using the [document menu and toolbar](https://salesforce.quip.com/dev/liveapps/documentation#menus-configuring-menu-commands) in [Quip Live Apps](https://salesforce.quip.com/dev/liveapps/documentation).  This component is designed to be declarative and reactive, taking advantage of React's built-in state management and update technology.
+
+This component allows developers to easily create and update the toolbar without needing to use [`quip.apps.updateToolbar`](https://salesforce.quip.com/dev/liveapps/documentation#menus-updating-the-toolbar).  Instead, React will automatically update the toolbar if the component state -- and thus, the toolbar state -- changes.
 
 ## Installation
 ```
-npm install https://github.com/herrevilkitten/quip-react-menu.git
+npm install https://github.com/herrevilkitten/quip-react-toolbar.git
 ```
 
 ## Usage
 ```
-import { MenuBar, Menu, MainMenu, MenuSeparator } from 'quip-react-menu';
+import { MenuBar, Menu, MainMenu, MenuSeparator } from 'quip-react-toolbar';
+
+export default class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      label: 'Hello',
+      highlighted: false,
+      disabled: false,
+    };
+
+    this.handleChange = this.handleChange.bind(this);
+  }
+
+  handleChange(event) {
+    const target = event.target;
+    const value = target.type === 'checkbox' ? target.checked : target.value;
+    const name = target.name;
+
+    this.setState({
+      [name]: value
+    });
+  }
+
+  menuHandler() {
+    console.log('I am a menu that has been handled!');
+  }
+
+  render() {
+    return (
+      <div>
+        <div>
+          <input
+            name="highlighted"
+            type="checkbox"
+            checked={this.state.highlighted}
+            onChange={this.handleChange} />
+          Highlighted
+        </div>
+        <div>
+          <input
+            name="disabled"
+            type="checkbox"
+            checked={this.state.disabled}
+            onChange={this.handleChange} />
+          Disabled
+        </div>
+        <div>
+          <input name="label" type="text" value={this.state.label} onChange={this.handleChange} />
+        </div>
+        <MenuBar>
+          <MainMenu>
+            <Menu highlighted={this.state.highlighted} label={this.state.label}>
+              <Menu id="submenu" label="Submenu" handler={this.menuHandler}></Menu>
+            </Menu>
+            <MenuSeparator></MenuSeparator>
+          </MainMenu>
+          <MainMenu>
+            <Menu label="Submenu" handler={this.menuHandler} sublabel="hello"></Menu>
+          </MainMenu>
+          <Menu highlighted={!this.state.highlighted} label={this.state.label + " !Highlighted"} handler={this.menuHandler}></Menu>
+          <Menu disabled={this.state.disabled} label={this.state.label + " Disabled"} handler={this.menuHandler}></Menu>
+        </MenuBar>
+      </div>
+    );
+  }
+}
 ```
+
+### Configuring the Toolbar and Menu
+
+The root of the menu system is the `MenuBar` component.  All of the menu entries must be placed within it.  The `MenuBar` can accept all of the other components in order to build the menu system.  The menu is configured in the order that the components are defined in the JSX.
+
+Any components that are inside of a `MainMenu` component will be placed into the live app's document menu.  Separate `MainMenu` entries will be merged into a single menu tree.  Anything that is a direct descendent of 
+
+#### Headers and Separators
+
+In addition to defining headers with a `Menu`, HTML elements can be used.  This is done to keep the component tree a little cleaner.  Any "simple" HTML element (such as `<b>` or `<em>`) and plain text will be turned into a header or separator.  For example:
+
+```
+<MenuBar>
+  <b>This is a header</b>
+  <b>This is another header</b>
+</MenuBar>
+```
+
+will create two headers inside of the live app's toolbar.  If the header's label is `---` or `----`, it will create a separator instead.
+
+```
+<MenuBar>
+  <b>This is a header</b>
+  ----
+  <b>This is another header</b>
+</MenuBar>
+```
+
+### `MenuBar`
+
+This is the root component of the menu system.  It handles updating the toolbar and main menu based on the state of its child components.
+
+### `MainMenu`
+
+This component can only be used as a director child of `MenuBar`.  Children of `MainMenu` will be placed into the live app's document menu as `subCommands` of `quip.apps.DocumentMenuCommands.MENU_MAIN`.
+
+### `Menu`
+This component represents a [`quip.apps.MenuCommand`](https://salesforce.quip.com/dev/liveapps/documentation#menus-configuring-menu-commands) and shares most of the properties with it.  There are some important differences, however.
+
+#### Properties
+`id: string [optional]` -- a unique identifier for the menu.  If one is not provided, it will be automatically generated by the component using a simple algorithm.
+
+`label: string [optional]` -- No change from the Quip documentation.
+
+`sublabel: string [optional]` -- No change from the Quip documentation.
+
+`handler: function(string, Object, ?) [optional]` -- No change from the Quip documentation.
+
+`isHeader: boolean [optional, default=False]` -- indicates whether or not this menu should be displayed as a header.  If a `handler` property is not set and the component has no child menus, this property will be automatically set.
+
+`actionId: string [optional]` -- No change from the Quip documentation.
+
+`actionParams: Object [optional]` -- No change from the Quip documentation.
+
+`actionStarted: function() [optional]` -- No change from the Quip documentation.
+
+`highlighted: boolean [optional]` -- indicates whether this menu entry should be "highlighted" by adding the menu to [`highlightedCommandIds`](https://salesforce.quip.com/dev/liveapps/documentation#menus-updating-the-toolbar).
+
+`disabled: boolean [optional]` -- indicates whether this menu entry is disabled by adding the menu to [`disabledCommandIds`](https://salesforce.quip.com/dev/liveapps/documentation#menus-updating-the-toolbar).
+
+The `subCommands` configuration is automatically built from the component tree and will not be used if it is defined.
+
+### `MenuSeparator`
+
+This adds a `quip.apps.DocumentMenuCommands.SEPARATOR` to the menu.

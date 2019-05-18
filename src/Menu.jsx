@@ -10,9 +10,37 @@ export const KEYS = [
   'sublabel',
   'handler',
   'isHeader',
+  'actionId',
   'actionParams',
   'actionStarted',
 ];
+
+export function createHeader(label) {
+  if (!label) {
+    return;
+  }
+  if (typeof (label.type) === 'string') {
+    if (label.props && typeof (label.props.children) === 'string') {
+      label = label.props.children;
+    } else {
+      label = '';
+    }
+  }
+  label = label || '';
+  if (label.match(/^\-\-\-+$/)) {
+    return {
+      id: quip.apps.DocumentMenuCommands.SEPARATOR,
+    };
+  }
+  const header = {
+    id: `generated-menu-${assignedMenuId}`,
+    label: label || '',
+    isHeader: true,
+  };
+  assignedMenuId++;
+
+  return header;
+}
 
 export default class Menu extends React.Component {
   constructor(props) {
@@ -80,6 +108,23 @@ export default class Menu extends React.Component {
               currentMenu.subCommands = [];
             }
             currentMenu.subCommands.push(childMenuConfig.currentMenu.id);
+            break;
+          default:
+            switch (typeof (child.type)) {
+              case 'undefined':
+              case 'string':
+                const header = createHeader(child);
+                if (header) {
+                  if (!currentMenu.subCommands) {
+                    currentMenu.subCommands = [];
+                  }
+                  currentMenu.subCommands.push(header.id);
+                  if (header.id !== quip.apps.DocumentMenuCommands.SEPARATOR) {
+                    menuConfig.menuCommands.push(header);
+                  }
+                }
+                break;
+            }
             break;
         }
       }

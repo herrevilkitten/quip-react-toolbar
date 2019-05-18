@@ -2,6 +2,8 @@ import Menu from './Menu.jsx';
 import MainMenu from './MainMenu.jsx';
 import MenuSeparator from './MenuSeparator.jsx';
 
+import { createHeader } from './Menu.jsx';
+
 export default class MenuBar extends React.Component {
   constructor(props) {
     super(props);
@@ -52,13 +54,31 @@ export default class MenuBar extends React.Component {
           menuConfig.highlightedCommandIds.push(...childMenuConfig.highlightedCommandIds);
           break;
         case Menu:
-        case MenuSeparator:
           childMenuConfig = child.type.prototype.toQuipMenu.call(child);
 
           menuConfig.toolbarCommandIds.push(childMenuConfig.currentMenu.id);
           menuConfig.menuCommands.push(...childMenuConfig.menuCommands);
           menuConfig.disabledCommandIds.push(...childMenuConfig.disabledCommandIds);
           menuConfig.highlightedCommandIds.push(...childMenuConfig.highlightedCommandIds);
+          break;
+        case MenuSeparator:
+          childMenuConfig = child.type.prototype.toQuipMenu.call(child);
+
+          menuConfig.toolbarCommandIds.push(childMenuConfig.currentMenu.id);
+          break;
+        default:
+          switch (typeof (child.type)) {
+            case 'undefined':
+            case 'string':
+              const header = createHeader(child);
+              if (header) {
+                menuConfig.toolbarCommandIds.push(header.id);
+                if (header.id !== quip.apps.DocumentMenuCommands.SEPARATOR) {
+                  menuConfig.menuCommands.push(header);
+                }
+              }
+              break;
+          }
           break;
       }
     }
